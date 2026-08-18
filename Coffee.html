@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Are you sure?</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    font-family: 'Segoe UI', Arial, sans-serif;
+    overflow: hidden;
+  }
+
+  .card {
+    text-align: center;
+    animation: fadeIn 0.4s ease;
+  }
+
+  .view {
+    display: none;
+    text-align: center;
+    animation: fadeIn 0.5s ease;
+  }
+
+  .view.active {
+    display: block;
+  }
+
+  .card.hidden {
+    display: none;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+
+  .success-icon {
+    font-size: 90px;
+    margin-bottom: 6px;
+    animation: pop 0.5s ease;
+  }
+
+  .success-text {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-style: italic;
+    font-weight: 700;
+    font-size: 56px;
+    color: #f5d06f;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.6), 0 0 24px rgba(212,175,55,0.4);
+    letter-spacing: 1px;
+  }
+
+  .dodge-message {
+    color: #f1f5f9;
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    min-height: 28px;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+
+  .dodge-message.show {
+    opacity: 1;
+  }
+
+  .escalation-choices {
+    display: none;
+    gap: 12px;
+    justify-content: center;
+    margin-top: -8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .escalation-choices.show {
+    display: flex;
+  }
+
+  .small-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid #475569;
+    border-radius: 8px;
+    background: #1e293b;
+    color: #e2e8f0;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+
+  .small-btn:hover {
+    background: #334155;
+    border-color: #64748b;
+  }
+
+  .small-btn.yes-choice:hover {
+    border-color: #22c55e;
+    color: #86efac;
+  }
+
+  .small-btn.no-choice:hover {
+    border-color: #64748b;
+    color: #cbd5e1;
+  }
+
+  @keyframes pop {
+    0%   { transform: scale(0.3); opacity: 0; }
+    60%  { transform: scale(1.15); opacity: 1; }
+    100% { transform: scale(1); }
+  }
+
+  .confetti {
+    position: fixed;
+    top: -10px;
+    width: 8px;
+    height: 14px;
+    opacity: 0.9;
+    pointer-events: none;
+    animation: fall linear forwards;
+  }
+
+  @keyframes fall {
+    to { transform: translateY(110vh) rotate(360deg); opacity: 0.3; }
+  }
+
+  .attempt-counter {
+    position: fixed;
+    bottom: 16px;
+    right: 20px;
+    color: #64748b;
+    font-size: 12px;
+    font-family: 'Segoe UI', Arial, sans-serif;
+  }
+
+  .image-box {
+    width: 220px;
+    height: 220px;
+    border-radius: 20px;
+    background: #2b1d12;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    user-select: none;
+  }
+
+  .question {
+    color: #f1f5f9;
+    font-size: 22px;
+    margin-bottom: 28px;
+    font-weight: 600;
+  }
+
+  .btn-row {
+    position: relative;
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    height: 60px;
+  }
+
+  button {
+    padding: 14px 36px;
+    font-size: 16px;
+    font-weight: 700;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+  }
+
+  #yesBtn {
+    background: #22c55e;
+    color: white;
+  }
+  #yesBtn:hover { background: #16a34a; }
+
+  #noBtn {
+    background: #ef4444;
+    color: white;
+    position: fixed; /* lets us freely reposition it anywhere on screen */
+    left: 0;
+    top: 0;
+    z-index: 10;
+  }
+
+</style>
+</head>
+<body>
+
+  <div class="card view active" id="questionView">
+    <div class="image-box">
+      <svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="cupGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#8B5A2B"/>
+            <stop offset="100%" stop-color="#5C3A21"/>
+          </linearGradient>
+          <linearGradient id="textGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#D4AF37"/>
+            <stop offset="50%" stop-color="#F5D06F"/>
+            <stop offset="100%" stop-color="#B8860B"/>
+          </linearGradient>
+        </defs>
+
+        <!-- steam -->
+        <path d="M75 40 Q70 30 78 22 Q86 14 80 5" stroke="#e8dcc8" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.7">
+          <animate attributeName="d" dur="3s" repeatCount="indefinite"
+            values="M75 40 Q70 30 78 22 Q86 14 80 5;
+                    M75 40 Q82 30 74 22 Q66 14 80 5;
+                    M75 40 Q70 30 78 22 Q86 14 80 5" />
+        </path>
+        <path d="M105 40 Q100 28 108 20 Q116 12 110 4" stroke="#e8dcc8" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.6">
+          <animate attributeName="d" dur="3.4s" repeatCount="indefinite"
+            values="M105 40 Q100 28 108 20 Q116 12 110 4;
+                    M105 40 Q112 28 104 20 Q96 12 110 4;
+                    M105 40 Q100 28 108 20 Q116 12 110 4" />
+        </path>
+
+        <!-- handle -->
+        <path d="M158 90 Q182 90 182 112 Q182 134 158 134" stroke="#5C3A21" stroke-width="9" fill="none" stroke-linecap="round"/>
+
+        <!-- cup body -->
+        <path d="M40 85 H160 L150 165 Q148 178 132 178 H68 Q52 178 50 165 Z" fill="url(#cupGrad)" stroke="#3F2714" stroke-width="2"/>
+
+        <!-- saucer -->
+        <ellipse cx="100" cy="182" rx="60" ry="8" fill="#3F2714" opacity="0.85"/>
+
+        <!-- coffee surface -->
+        <ellipse cx="100" cy="87" rx="60" ry="9" fill="#3B2314"/>
+
+        <!-- COFFEE text across the cup -->
+        <text x="100" y="128" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif"
+          font-size="24" font-weight="bold" fill="url(#textGrad)" letter-spacing="2"
+          stroke="#5C3A0E" stroke-width="0.5">COFFEE</text>
+      </svg>
+    </div>
+    <div class="dodge-message" id="dodgeMessage"></div>
+    <div class="escalation-choices" id="escalationChoices">
+      <button class="small-btn yes-choice" onclick="escalationYes()">✅ Yes, I have work</button>
+      <button class="small-btn no-choice" onclick="escalationNo()">⬜ Nope, just checking the cool interactive button</button>
+    </div>
+    <div class="btn-row">
+      <button id="yesBtn" onclick="handleYesClick()">Yes</button>
+      <button id="noBtn">No</button>
+    </div>
+  </div>
+
+  <div class="view" id="successView">
+    <div class="success-icon">🎉</div>
+    <div class="success-text">Let's Go</div>
+  </div>
+
+  <div class="view" id="altSuccessView">
+    <div class="success-icon">😇</div>
+    <div class="success-text">No worries, Next Time</div>
+  </div>
+
+  <div class="attempt-counter" id="attemptCounter"></div>
+
+<script>
+  const noBtn = document.getElementById('noBtn');
+  const yesBtn = document.getElementById('yesBtn');
+  const attemptCounter = document.getElementById('attemptCounter');
+  const dodgeMessage = document.getElementById('dodgeMessage');
+  const escalationChoices = document.getElementById('escalationChoices');
+  let dodgeCount = 0;
+  let escalated = false;
+  const ESCALATION_THRESHOLD = 300;
+
+  // Distance to keep from the cursor (1 cm ≈ 37.8 px at 96 DPI)
+  const SAFE_DISTANCE_PX = 37.8 * 4; // ~4cm
+  const MOVE_TRIGGER_RADIUS = 37.8 * 7; // start dodging once cursor is within ~7cm
+
+  // Give the button an initial position near the Yes button
+  function initPosition() {
+    const yesBtn = document.getElementById('yesBtn');
+    const rect = yesBtn.getBoundingClientRect();
+    noBtn.style.left = (rect.right + 24) + 'px';
+    noBtn.style.top = rect.top + 'px';
+  }
+  window.addEventListener('load', initPosition);
+
+  function getFarthestCorner(mouseX, mouseY, halfW, halfH) {
+    const margin = 10;
+    const corners = [
+      { x: halfW + margin, y: halfH + margin },
+      { x: window.innerWidth - halfW - margin, y: halfH + margin },
+      { x: halfW + margin, y: window.innerHeight - halfH - margin },
+      { x: window.innerWidth - halfW - margin, y: window.innerHeight - halfH - margin },
+    ];
+    let best = corners[0], bestDist = -1;
+    for (const c of corners) {
+      const d = Math.hypot(c.x - mouseX, c.y - mouseY);
+      if (d > bestDist) { bestDist = d; best = c; }
+    }
+    return best;
+  }
+
+  function moveButtonAwayFrom(mouseX, mouseY) {
+    const btnRect = noBtn.getBoundingClientRect();
+    const halfW = btnRect.width / 2;
+    const halfH = btnRect.height / 2;
+    const btnCenterX = btnRect.left + halfW;
+    const btnCenterY = btnRect.top + halfH;
+
+    const dx = btnCenterX - mouseX;
+    const dy = btnCenterY - mouseY;
+    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+
+    const dirX = dx / dist;
+    const dirY = dy / dist;
+
+    let newCenterX = mouseX + dirX * SAFE_DISTANCE_PX;
+    let newCenterY = mouseY + dirY * SAFE_DISTANCE_PX;
+
+    const margin = 10;
+    const clampedX = Math.min(Math.max(newCenterX, halfW + margin), window.innerWidth - halfW - margin);
+    const clampedY = Math.min(Math.max(newCenterY, halfH + margin), window.innerHeight - halfH - margin);
+
+    // If clamping pulled the button back within the danger zone
+    // (classic corner-trap scenario), jump to whichever corner is
+    // farthest from the cursor instead — guarantees a real escape.
+    const resultingDist = Math.hypot(clampedX - mouseX, clampedY - mouseY);
+    let finalX = clampedX, finalY = clampedY;
+
+    if (resultingDist < SAFE_DISTANCE_PX * 0.9) {
+      const corner = getFarthestCorner(mouseX, mouseY, halfW, halfH);
+      finalX = corner.x;
+      finalY = corner.y;
+    }
+
+    noBtn.style.left = (finalX - halfW) + 'px';
+    noBtn.style.top = (finalY - halfH) + 'px';
+  }
+
+  document.addEventListener('mousemove', (e) => {
+    const btnRect = noBtn.getBoundingClientRect();
+    const btnCenterX = btnRect.left + btnRect.width / 2;
+    const btnCenterY = btnRect.top + btnRect.height / 2;
+
+    const dx = btnCenterX - e.clientX;
+    const dy = btnCenterY - e.clientY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    // Only dodge once the cursor gets reasonably close —
+    // keeps it from being distracting from across the whole screen
+    if (dist < MOVE_TRIGGER_RADIUS) {
+      moveButtonAwayFrom(e.clientX, e.clientY);
+      dodgeCount++;
+      if (dodgeCount === 1) {
+        attemptCounter.textContent = "dodged 1 time";
+      } else {
+        attemptCounter.textContent = "dodged " + dodgeCount + " times";
+      }
+
+      if (dodgeCount > ESCALATION_THRESHOLD && !escalated) {
+        escalated = true;
+        dodgeMessage.textContent = "Do you have work 😭";
+        dodgeMessage.classList.add('show');
+        yesBtn.style.display = 'none';
+        escalationChoices.classList.add('show');
+      }
+    }
+  });
+
+  // Just in case someone tabs to it and presses Enter/Space
+  noBtn.addEventListener('focus', () => {
+    noBtn.blur();
+  });
+
+  function launchConfetti() {
+    const colors = ['#d4af37', '#f5d06f', '#8B5A2B', '#22c55e', '#f1f5f9'];
+    for (let i = 0; i < 60; i++) {
+      const piece = document.createElement('div');
+      piece.className = 'confetti';
+      piece.style.left = Math.random() * 100 + 'vw';
+      piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+      piece.style.animationDuration = (2 + Math.random() * 1.5) + 's';
+      piece.style.transform = `rotate(${Math.random() * 360}deg)`;
+      document.body.appendChild(piece);
+      setTimeout(() => piece.remove(), 4000);
+    }
+  }
+
+  function handleYesClick() {
+    showSuccess();
+  }
+
+  function escalationYes() {
+    showAltSuccess();
+  }
+
+  function escalationNo() {
+    resetToFirstView();
+  }
+
+  function resetToFirstView() {
+    dodgeMessage.classList.remove('show');
+    dodgeMessage.textContent = '';
+    escalationChoices.classList.remove('show');
+    yesBtn.style.display = '';
+    attemptCounter.textContent = '';
+    dodgeCount = 0;
+    escalated = false;
+    initPosition();
+  }
+
+  function showSuccess() {
+    document.getElementById('questionView').classList.remove('active');
+    document.getElementById('questionView').classList.add('hidden');
+    document.getElementById('successView').classList.add('active');
+    attemptCounter.style.display = 'none';
+    launchConfetti();
+  }
+
+  function showAltSuccess() {
+    document.getElementById('questionView').classList.remove('active');
+    document.getElementById('questionView').classList.add('hidden');
+    document.getElementById('altSuccessView').classList.add('active');
+    attemptCounter.style.display = 'none';
+  }
+</script>
+</body>
+</html>
