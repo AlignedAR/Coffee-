@@ -275,7 +275,8 @@
   const escalationChoices = document.getElementById('escalationChoices');
   let dodgeCount = 0;
   let escalated = false;
-  const ESCALATION_THRESHOLD = 300;
+  let lastJumpPoint = null;
+  const ESCALATION_THRESHOLD = 210;
 
   // Distance to keep from the cursor (1 cm ≈ 37.8 px at 96 DPI)
   const SAFE_DISTANCE_PX = 37.8 * 4; // ~4cm
@@ -289,6 +290,38 @@
     noBtn.style.top = rect.top + 'px';
   }
   window.addEventListener('load', initPosition);
+
+  function getRandomSafeJumpPoint(mouseX, mouseY, halfW, halfH) {
+    const margin = 10;
+    const minX = halfW + margin, maxX = window.innerWidth - halfW - margin;
+    const minY = halfH + margin, maxY = window.innerHeight - halfH - margin;
+
+    // Try a bunch of random spots; keep the one that ends up
+    // farthest from the cursor (and not a repeat of the last jump).
+    let best = null, bestScore = -1;
+    for (let i = 0; i < 25; i++) {
+      const x = minX + Math.random() * (maxX - minX);
+      const y = minY + Math.random() * (maxY - minY);
+      const distFromMouse = Math.hypot(x - mouseX, y - mouseY);
+      const distFromLastJump = lastJumpPoint
+        ? Math.hypot(x - lastJumpPoint.x, y - lastJumpPoint.y)
+        : 9999;
+
+      if (distFromMouse < SAFE_DISTANCE_PX * 1.15) continue; // not safe enough, skip
+
+      // Prefer points that are both safe from the mouse AND different
+      // from where we jumped last time, so it doesn't feel like a 2-spot loop.
+      const score = distFromMouse + distFromLastJump * 0.5;
+      if (score > bestScore) { bestScore = score; best = { x, y }; }
+    }
+
+    // Fallback: if nothing cleared the bar (very small screen etc.),
+    // just use the single farthest corner as a last resort.
+    if (!best) {
+      best = getFarthestCorner(mouseX, mouseY, halfW, halfH);
+    }
+    return best;
+  }
 
   function getFarthestCorner(mouseX, mouseY, halfW, halfH) {
     const margin = 10;
@@ -334,9 +367,10 @@
     let finalX = clampedX, finalY = clampedY;
 
     if (resultingDist < SAFE_DISTANCE_PX * 0.9) {
-      const corner = getFarthestCorner(mouseX, mouseY, halfW, halfH);
-      finalX = corner.x;
-      finalY = corner.y;
+      const jump = getRandomSafeJumpPoint(mouseX, mouseY, halfW, halfH);
+      finalX = jump.x;
+      finalY = jump.y;
+      lastJumpPoint = { x: finalX, y: finalY };
     }
 
     noBtn.style.left = (finalX - halfW) + 'px';
